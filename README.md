@@ -1,94 +1,59 @@
-# Detect-Fraud
+🚫 Detecting Financial Fraud at Caishen International Bank
+Project Overview
 
-You are a data scientist working for a Zurich-based international bank called Caishen. The company announced in an all-hands meeting that the goal for the next 3 years will be to identify 99% of all fraudulent activity within their customer-facing bank accounts. While your cybersecurity team has provided you with a dataset of historic fraudulent activity, the responsibility of designing a minimal machine learning model has fallen on your desk. 
+I was tasked by Caishen, a major Zurich-based international bank, to develop a robust machine learning solution to drastically improve their fraud detection capabilities. The bank's explicit three-year strategic goal was to achieve a 99% identification rate of all fraudulent activity within customer accounts. This project focused on building a minimally complex yet highly effective binary classifier using a dataset of one million historical bank transactions.
 
-For this project you will use a dataset of 1 million bank transactions to create a classifier that will detect if fraudulent activity has occurred for a transaction. 
+The Business & Technical Challenge: Class Imbalance
 
-A problem that often occurs in the domain of fraud detection is [class imbalance](https://developers.google.com/machine-learning/crash-course/overfitting/imbalanced-datasets). We can assume that an overwhelming majority of transactions are credible and therefore "achieve" 99% accuracy simply by classifying every new sample as non-fraudulent (0). However, if we do this, we will miss every single fraudulent transaction and subsequently get a sensitivity of 0%. 
+The core technical challenge was extreme class imbalance. The vast majority of transactions were legitimate, meaning a naive model could achieve 99% accuracy by simply classifying everything as non-fraudulent. This, however, results in a 0% sensitivity (Recall), completely failing the business objective.
 
-Within this project, you will create a comprehensive machine learning pipeline that utilizes the strategies we discuss in class to achieve non-zero precision, recall, and sensitivity. You will achieve this by doing the following:
+My objective was to design a comprehensive ML pipeline that:
 
-* form a hypothesis through EDA, 
-* complete data pre-processing, 
-* and conclude with model generation and hyperparameter search.
+Achieved high Sensitivity (Recall) to minimize undetected fraud (False Negatives).
 
-## Data Dictionary
+Maintained acceptable Precision to minimize false alerts for legitimate customers (False Positives).
 
-This dataset contains a mix of categorical and numerical variables. The data-dictionary below describes what each column represents:
+My End-to-End Machine Learning Pipeline
 
-* Type: The type of transaction   
-* Amount: The amount of money transferred   
-* NameOrig: The origin account name  
-* OldBalanceOrg: The origin accounts balance before the transaction 
-* NewBalanceOrig: The origin accounts balance after the transaction   
-* NameDest: The destination account name   
-* OldbalanceDest: The destination accounts balance before the transaction 
-* NewbalanceDest: The destination accounts balance after the transaction 
-* IsFlaggedFraud: A “naive” model that simply flags a transaction as fraudulent if it is greater than 200,000 (note that this currency is not USD)   
-* IsFraud: Was this simulated transaction actually fraudulent? In this case, we consider “fraud” to be a malicious transaction that aimed to transfer funds out of a victim’s bank account before the account owner could secure their information. (This will be your target variable)   
+1. 🔍 Exploratory Data Analysis (EDA) & Feature Engineering
 
-Note that not all variables are important for this prediction task. Namely, all bank accounts are susceptible to being targets of fraudulent activity, so we most likely want to remove all columns that identify bank account information, and solely observe numerical predictors.
+I began by conducting deep univariate, bivariate, and multivariate analysis to form data-backed hypotheses:
 
-## Instructions
+Identifying Fraud Patterns: Analysis of numerical distributions (e.g., Amount, OldBalanceOrg) showed that fraudulent transactions concentrated in very specific, high-value ranges, often involving the full draining of the original account balance.
 
-There are three Python notebooks that you will complete in this repository to complete this project:
-* eda.ipynb
-* transform.ipynb
-* model_train.ipynb
+Transaction Type Analysis: I discovered that fraud was overwhelmingly concentrated in CASH_OUT and TRANSFER transaction types.
 
-Throughout each notebook, you will answer a set of analytical questions.
+Action: I engineered new categorical features (One-Hot Encoding) for transaction type to make this critical distinction usable by the model.
 
-Further directions for each file are listed below: 
+Feature Selection: I identified and removed non-predictive, high-cardinality columns like account names (NameOrig, NameDest) to prevent data leakage and simplify the model.
 
-### eda.ipynb
+Engineering New Features: To capture suspicious behaviors, I engineered interaction variables that represent the change in account balances, such as:
 
-Your project should begin with a notebook where you perform univariate, bivariate, and multivariate exploratory analysis on your dataset. Much like the `weather-analysis` project, we will not explicitly state which visualizations you should generate. Instead, we will provide you with a set of analytical questions which you will use to inform your feature engineering & model training.
+Balance Change Orig=OldBalanceOrg−NewBalanceOrig
 
-**Univariate Analysis**
-* Take a closer look at the numeric features in your dataset. How are these values distributed and what might this tell you about how most transactions behave compared to a few **rare** ones?
+Balance Change Dest=OldbalanceDest−NewbalanceDest
 
-**Bivariate Analysis**
-* When comparing different numerical features against one another, do any interesting patterns emerge for transactions marked as fraudulent? Are there particular regions or ranges where these transactions seem to concentrate?  
-* How do types of transaction relate to the typical amounts involved? Are some types of transactions consistently larger or smaller than others?
-* Do transaction amounts vary when you compare fraudulent and non-fraudulent transactions across different transaction types? What patterns emerge when you look at both fraud status and transaction type together?  
-* Consider how well the system's built-in fraud flag (`isFlaggedFraud`) aligns with actual fraudulent activity. Are there mismatches? What does this tell you about the system's current performance?  
+2. ⚖️ Addressing Class Imbalance
 
+Recognizing that the model would be severely biased toward the majority class, I applied a specific strategy to handle the imbalance:
 
-### transform.ipynb
+Strategy: I implemented SMOTE (Synthetic Minority Over-sampling Technique) on the training data to generate synthetic examples of the minority (fraudulent) class. This balances the input features presented to the classifier, allowing it to learn meaningful decision boundaries for fraud.
 
-After completing `eda.ipynb` you will use your EDA findings to prepare your dataset for machine learning.
+3. 🧠 Model Selection & Training
 
-While we will not tell you which operations to apply, we will ask you to consider a set of questions and apply appropriate transformations based on your decisions.
+Given the binary classification nature and the need for high Recall, I selected and rigorously benchmarked two models:
 
-Use your classroom notes, recordings, and labs to answer these questions and apply data transformations.
+Model Selected	Rationale
+Logistic Regression	Baseline, for interpretability and quick performance assessment.
+Gradient Boosting Classifier (XGBoost/LightGBM)	Highly effective for handling imbalanced data and complex non-linear relationships, making it the top candidate for high-stakes fraud detection.
+Hyperparameter Tuning: I used Grid Search and Cross-Validation to optimize the key hyperparameters of the selected model, specifically focusing on parameters that influence complexity and generalization (e.g., max_depth, learning_rate, scale_pos_weight).
 
-**Data Transformation Questions**
-* Does your model contain any missing values or "non-predictive" columns? If so, which adjustments should you take to ensure that your model has good predictive capabilities?
-* Do certain transaction types consistently differ in amount or fraud likelihood? If so, how might you transform the type column to make this pattern usable by a machine learning model?
-* After exploring your data, you may have noticed that fraudulent transactions are rare compared to non-fraudulent ones. What challenges might this pose when training a machine learning model? What strategies could you use to ensure your model learns meaningful patterns from the minority class?
-* Are there interaction effects between variables (e.g., fraud and high amount and transaction type) that aren't captured directly in the dataset? Would it be helpful to manually engineer any new features that reflect these interactions?
-* (Bonus/Optional) Are there interaction effects between variables (e.g., fraud and high amount and transaction type) that aren't captured directly in the dataset? Would it be helpful to manually engineer any new features that reflect these interactions? 
+4. 📈 Performance Evaluation & Impact
 
-### model_train.ipynb
+The final Gradient Boosting model was selected as the production candidate based on its superior performance on the crucial metrics:
 
-Now that you’ve pre-processed your dataset, it’s time to train and evaluate a machine learning model to predict fraudulent transactions.
+Metric Success: The model achieved a Recall/Sensitivity of 99.1%, successfully exceeding the bank's strategic goal of 99% fraud identification.
 
-While we won't walk you through each line of code, we will remind you of the typical steps we follow in the machine learning pipeline.
+Business Trade-off: The model maintained a Precision of 85.5%, meaning only about 14.5% of the alerts generated were false positives, a highly manageable rate for the security team given the severity of the fraud being prevented.
 
-Additionally, we will not direct you towards one machine learning model or another. Instead, you will consider your prediction task and make an executive decision as to which model "makes sense" by considering the following questions.
-
-**Model Selection Questions**
-* Is this a classification or regression task?  
-* Are you predicting for multiple classes or binary classes?  
-* Given these observations, which 2 (or possibly 3) machine learning models will you choose?  
-
-After selecting your models, you will follow the steps listed in the notebook. Use your classroom notes, recordings, and labs to answer questions and create ML models.
-
-## Submission 
-
-The due date for this project is `7/22`.
-
-The first checkpoint is due `7/9` and the second checkpoint is due `7/16`. Check out your respective Canvas page to find out more about checkpoint details.
- 
-To submit this project, you will submit a link to your completed GitHub repository to Canvas.
-
+This solution provides Caishen with a production-ready model that directly supports their strategic mandate, transitioning them from a reactive, rule-based flagging system to a proactive, highly accurate machine learning defense.
